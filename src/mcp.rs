@@ -36,10 +36,10 @@ impl Response {
     }
 }
 
-pub struct Server { cfg: Config, terminal: Terminal, rag: Arc<Mutex<RagStore>> }
+pub struct Server { cfg: Config, terminal: Terminal, runner: Arc<crate::podman::PodmanRunner>, rag: Arc<Mutex<RagStore>> }
 impl Server {
-    pub fn new(cfg: Config, terminal: Terminal, rag: Arc<Mutex<RagStore>>) -> Self {
-        Self { cfg, terminal, rag }
+    pub fn new(cfg: Config, terminal: Terminal, runner: Arc<crate::podman::PodmanRunner>, rag: Arc<Mutex<RagStore>>) -> Self {
+        Self { cfg, terminal, runner, rag }
     }
     pub async fn handle(&mut self, req: Request) -> Option<Response> {
         let id = req.id.clone()?;
@@ -72,7 +72,7 @@ impl Server {
             {"name":"git_commit","description":"Create a git commit with a supplied message.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"message":{"type":"string"}},"required":["message"]}},
             {"name":"rag_store","description":"Persist a memory/note in local JSONL RAG storage.","inputSchema":{"type":"object","properties":{"text":{"type":"string"},"metadata":{"type":"object"}},"required":["text"]}},
             {"name":"rag_search","description":"Search local RAG memory using embeddings when configured, otherwise keywords.","inputSchema":{"type":"object","properties":{"query":{"type":"string"},"top_k":{"type":"integer"}},"required":["query"]}},
-            {"name":"container_info","description":"Return bridge and sandbox configuration.","inputSchema":{"type":"object","properties":{}}}
+            {"name":"container_info","description":"Return bridge, Podman, and sandbox runtime information.","inputSchema":{"type":"object","properties":{}}}
         ]})
     }
 
@@ -163,9 +163,22 @@ impl Server {
         Ok((out,false))
     }
     async fn container_info(&self) -> Result<(String,bool)> {
+        let inspect = self.runner.info().await?;
+        let state = inspect.get(0).cloned().unwrap_or_else(|| json!({}));
         Ok((serde_json::to_string_pretty(&json!({
-            "container":self.cfg.container,"shell":self.cfg.shell,"workspace":self.cfg.workspace,
-            "timeout":self.cfg.timeout,"max_output":self.cfg.max_output,
+            "container": self.cfg.container,
+            "podman": self.cfg.podman,
+            "auto_start": self.cfg.auto_start,
+            "shell": self.cfg.shell,
+            "workspace": self.cfg.workspace,
+            "timeout": self.cfg.timeout,
+            "max_output": self.cfg.max_output,
+            "container_state": state.get("State").cloned().unwrap_or_else(|| json!({})),
+            "container_config": {
+                "image": state.get("Config").and_then(|v| v.get("Image")),
+                "user": state.get("Config").and_then(|v| v.get("User")),
+                "working_dir": state.get("Config").and_then(|v| v.get("WorkingDir"))
+            },
             "rag":{"enabled":self.cfg.rag.enabled,"provider":self.cfg.rag.embedding_provider,"path":self.cfg.rag.storage_path},
             "server":{"name":SERVER_NAME,"version":SERVER_VERSION,"protocol":PROTOCOL_VERSION}
         }))?,false))
