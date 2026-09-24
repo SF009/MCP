@@ -4,7 +4,7 @@ mod podman;
 mod rag;
 mod terminal;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing_subscriber::EnvFilter;
 use crate::config::Config;
@@ -24,14 +24,15 @@ async fn main() -> Result<()> {
 
     let cfg_path = std::env::var("MCP_CONFIG").unwrap_or_else(|_| "config.toml".into());
     let cfg = Config::load(&cfg_path)?;
-    tracing::info!("loaded config: {cfg_path}");
+    tracing::info!(config=%cfg_path, container=%cfg.container, podman=%cfg.podman, "MCP bridge started");
 
     let runner = Arc::new(PodmanRunner::new(
-        cfg.container.clone(), cfg.shell.clone(), cfg.timeout, cfg.workspace.clone()
+        cfg.podman.clone(), cfg.container.clone(), cfg.shell.clone(),
+        cfg.timeout, cfg.workspace.clone(), cfg.auto_start
     ));
-    let terminal = Terminal::new(runner, cfg.max_output);
+    let terminal = Terminal::new(runner.clone(), cfg.max_output);
     let rag = Arc::new(Mutex::new(RagStore::new(&cfg.rag).await?));
-    let mut server = Server::new(cfg, terminal, rag);
+    let mut server = Server::new(cfg, terminal, runner, rag);
 
     let stdin = tokio::io::stdin();
     let mut lines = BufReader::new(stdin).lines();
@@ -43,16 +44,17 @@ async fn main() -> Result<()> {
         let req: Request = match serde_json::from_str(line) {
             Ok(r) => r,
             Err(e) => {
-                write_response(&mut stdout,&Response::error(serde_json::Value::Null,-32700,format!("Parse error: {e}"))).await?;
+                write_response(&mut stdout, &Response::error(serde_json::Value::Null, -32700, format!("Parse error: {e}"))).await?;
                 continue;
             }
         };
-        if let Some(resp) = server.handle(req).await { write_response(&mut stdout,&resp).await?; }
+        if let Some(resp) = server.handle(req).await { write_response(&mut stdout, &resp).await?; }
     }
     Ok(())
 }
-async fn write_response(stdout:&mut tokio::io::Stdout,resp:&Response)->Result<()>{
-    let s=serde_json::to_string(resp)?;
+
+async fn write_response(stdout: &mut tokio::io::Stdout, resp: &Response) -> Result<()> {
+    let s = serde_json::to_string(resp)?;
     stdout.write_all(s.as_bytes()).await?;
     stdout.write_all(b"\n").await?;
     stdout.flush().await?;
