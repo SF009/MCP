@@ -176,25 +176,25 @@ impl Server {
         Ok((out,false))
     }
     async fn container_info(&self) -> Result<(String,bool)> {
-        let inspect = self.runner.info().await?;
-        let state = inspect.get(0).cloned().unwrap_or_else(|| json!({}));
+        let runtime = self.runner.info().await?;
         Ok((serde_json::to_string_pretty(&json!({
-            "container": self.cfg.container,
-            "podman": self.cfg.podman,
-            "auto_start": self.cfg.auto_start,
-            "shell": self.cfg.shell,
+            "environment": "Ubuntu Distrobox",
             "workspace": self.cfg.workspace,
+            "shell": self.cfg.shell,
             "timeout": self.cfg.timeout,
             "max_output": self.cfg.max_output,
-            "container_state": state.get("State").cloned().unwrap_or_else(|| json!({})),
-            "container_config": {
-                "image": state.get("Config").and_then(|v| v.get("Image")),
-                "user": state.get("Config").and_then(|v| v.get("User")),
-                "working_dir": state.get("Config").and_then(|v| v.get("WorkingDir"))
+            "runtime": runtime,
+            "rag": {
+                "enabled": self.cfg.rag.enabled,
+                "provider": self.cfg.rag.embedding_provider,
+                "path": self.cfg.rag.storage_path
             },
-            "rag":{"enabled":self.cfg.rag.enabled,"provider":self.cfg.rag.embedding_provider,"path":self.cfg.rag.storage_path},
-            "server":{"name":SERVER_NAME,"version":SERVER_VERSION,"protocol":PROTOCOL_VERSION}
-        }))?,false))
+            "server": {
+                "name": SERVER_NAME,
+                "version": SERVER_VERSION,
+                "protocol": PROTOCOL_VERSION
+            }
+        }))?, false))
     }
 }
 fn required_str<'a>(v:&'a Value,key:&str,tool:&str)->Result<&'a str>{
