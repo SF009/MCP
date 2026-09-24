@@ -12,7 +12,7 @@ Bionic / AI model (host)
 run-mcp-distrobox.sh
         |
         v
-distrobox enter --root mcp
+distrobox enter ubuntu
         |
         v
 rootless Podman inside Distrobox
@@ -31,30 +31,22 @@ The existing container is configured by you and is accessed by the Rust MCP serv
 
 ## Distrobox
 
-The intended command is exactly:
+This project uses the existing Distrobox named `ubuntu` by default.
+
+Manual interactive use:
 
 ```bash
-distrobox enter --root mcp
+distrobox enter ubuntu
 ```
 
-Do not replace this with `sudo distrobox enter --root mcp`. Distrobox documents `--root` as the preferred mechanism for rootful Distrobox. citeturn0search1
-
-## One-time Distrobox setup
-
-If the `mcp` Distrobox has not been configured yet:
-
-```bash
-bash scripts/setup-distrobox.sh
-```
-
-This creates/configures only the Distrobox and its nested rootless Podman environment. It does **not** create or build `ai-agent-lab`.
+A rootless Distrobox and a rootful Distrobox are different Podman containers/storage contexts. The existing `ubuntu` shown by `distrobox list` is rootless, so `distrobox enter --root ubuntu` does not enter that same container; it asks for/looks for a separate rootful container with the same name.
 
 ## Start MCP
 
 For manual interactive use:
 
 ```bash
-distrobox enter --root mcp
+distrobox enter ubuntu
 ```
 
 For Bionic/MCP stdio, use:
@@ -79,7 +71,7 @@ and must already be running.
 Check it from inside the Distrobox:
 
 ```bash
-distrobox enter --root mcp
+distrobox enter ubuntu
 podman container exists ai-agent-lab
 podman inspect --format '{{.State.Running}}' ai-agent-lab
 podman exec ai-agent-lab id
