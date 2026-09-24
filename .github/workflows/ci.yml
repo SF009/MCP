@@ -10,6 +10,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: dtolnay/rust-toolchain@stable
+
       - run: cargo test --all-targets
       - run: cargo build --release
+
+      - name: Package release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/mcp-terminal-bridge
+          cp target/release/mcp-terminal-bridge dist/mcp-terminal-bridge/
+          cp README.md LICENSE config.toml Containerfile dist/mcp-terminal-bridge/
+          cp -r scripts dist/mcp-terminal-bridge/
+          tar -C dist -czf mcp-terminal-bridge-linux-x86_64.tar.gz mcp-terminal-bridge
+          sha256sum mcp-terminal-bridge-linux-x86_64.tar.gz > mcp-terminal-bridge-linux-x86_64.tar.gz.sha256
+
+      - name: Upload release artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-terminal-bridge-linux-x86_64
+          path: |
+            mcp-terminal-bridge-linux-x86_64.tar.gz
+            mcp-terminal-bridge-linux-x86_64.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 30
