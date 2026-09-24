@@ -23,11 +23,11 @@ ai-agent-lab (UID 0 inside this nested container)
 
 The MCP process runs as the normal Distrobox user. The nested Podman engine also runs rootless. The sandbox `ai-agent-lab` runs as `root` (UID 0) inside its own Podman container.
 
-Distrobox officially documents rootful + `--unshare-all` as the pattern for running a separate Podman instance inside Distrobox. It also documents configuring subordinate IDs and `containers.conf` for rootless Podman inside that Distrobox. citeturn2search1
+Distrobox officially documents rootful + `--unshare-all` as the pattern for running a separate Podman instance inside Distrobox. It also documents configuring subordinate IDs and `containers.conf` for rootless Podman inside that Distrobox.
 
 ## Important security note
 
-This is **not** a host security sandbox. Distrobox is designed for tight host integration, and the Distrobox documentation explicitly warns that rootful Distrobox containers use real root privileges and can modify host system state. The nested `ai-agent-lab` is the intended execution boundary for model-generated commands, but the outer rootful Distrobox must still be treated as privileged infrastructure. citeturn2search0turn2search2
+This is **not** a host security sandbox. Distrobox is designed for tight host integration, and the Distrobox documentation explicitly warns that rootful Distrobox containers use real root privileges and can modify host system state. The nested `ai-agent-lab` is the intended execution boundary for model-generated commands, but the outer rootful Distrobox must still be treated as privileged infrastructure.
 
 Inside `ai-agent-lab`, the current restrictions are:
 
@@ -65,7 +65,7 @@ For a manual interactive shell:
 distrobox enter --root mcp
 ```
 
-The `--root` option is intentional: the Distrobox itself is rootful. Distrobox normally uses sudo to access rootful containers, so a host authentication step may be required when the sudo timestamp has expired. For non-interactive MCP/stdio use, authenticate before launching when required. Distrobox documents that rootful entry uses sudo (or a configured alternative such as pkexec/doas). citeturn3search0turn2search5
+The `--root` option is intentional: the Distrobox itself is rootful. Distrobox normally uses sudo to access rootful containers, so a host authentication step may be required when the sudo timestamp has expired. For non-interactive MCP/stdio use, authenticate before launching when required. Distrobox documents that rootful entry uses sudo (or a configured alternative such as pkexec/doas).
 
 ## Build manually
 
