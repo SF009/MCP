@@ -23,7 +23,7 @@ jobs:
           set -euo pipefail
           mkdir -p dist/mcp-terminal-bridge
           cp target/release/mcp-terminal-bridge dist/mcp-terminal-bridge/
-          cp README.md LICENSE config.toml Containerfile dist/mcp-terminal-bridge/
+          cp README.md LICENSE config.toml dist/mcp-terminal-bridge/
           cp -r scripts dist/mcp-terminal-bridge/
           tar -C dist -czf mcp-terminal-bridge-linux-x86_64.tar.gz mcp-terminal-bridge
           sha256sum mcp-terminal-bridge-linux-x86_64.tar.gz > mcp-terminal-bridge-linux-x86_64.tar.gz.sha256
