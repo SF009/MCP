@@ -4,10 +4,12 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     pub container: String,
+    #[serde(default = "default_podman")] pub podman: String,
     #[serde(default = "default_shell")] pub shell: String,
     #[serde(default = "default_timeout")] pub timeout: u64,
     #[serde(default = "default_workspace")] pub workspace: String,
     #[serde(default = "default_max_output")] pub max_output: usize,
+    #[serde(default = "default_auto_start")] pub auto_start: bool,
     #[serde(default)] pub rag: RagConfig,
 }
 
@@ -39,10 +41,12 @@ impl Config {
         toml::from_str(&raw).with_context(|| format!("invalid TOML in {path}"))
     }
 }
+fn default_podman() -> String { "podman".into() }
 fn default_shell() -> String { "/bin/bash".into() }
 fn default_timeout() -> u64 { 300 }
 fn default_workspace() -> String { "/workspace".into() }
 fn default_max_output() -> usize { 65536 }
+fn default_auto_start() -> bool { true }
 fn default_true() -> bool { true }
 fn default_rag_path() -> String { "./data/rag.jsonl".into() }
 fn default_top_k() -> usize { 5 }
