@@ -76,14 +76,13 @@ Enter it:
 
     distrobox enter --root mcp
 
-Inside the Distrobox, add subordinate UID/GID ranges for the normal user:
+The bootstrap script performs the subordinate UID/GID setup for the normal user and configures rootless Podman. Do not run it as root.
 
-    sudo usermod --add-subuids 10000-65536 $USER
-    sudo usermod --add-subgids 10000-65536 $USER
+Then bootstrap Podman and the MCP sandbox as the normal Distrobox user. Because `--root` enters the rootful Distrobox as root, use `runuser`:
 
-Then bootstrap Podman and the MCP sandbox:
+    distrobox enter --root mcp -- bash -lc 'runuser -u YOUR_USER -- bash /path/to/MCP/scripts/bootstrap-distrobox.sh'
 
-    bash scripts/bootstrap-distrobox.sh
+Replace `YOUR_USER` and `/path/to/MCP` with your actual host username and repository path.
 
 Verify:
 
