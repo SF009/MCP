@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NAME="${MCP_DISTROBOX_NAME:-mcp}"
+# Use the existing Distrobox by default. Override with MCP_DISTROBOX_NAME if needed.
+NAME="${MCP_DISTROBOX_NAME:-ubuntu}"
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="${MCP_CONFIG:-$ROOT/config.toml}"
 BIN="${MCP_BINARY:-$ROOT/target/release/mcp-terminal-bridge}"
@@ -11,12 +12,9 @@ command -v distrobox >/dev/null || {
   exit 1
 }
 
-# Bionic/other MCP clients need a non-interactive stdio process.
-# Enter the already-existing rootful Distrobox and execute MCP directly.
-# This launcher deliberately does NOT create, inspect, start, stop, rebuild,
-# or otherwise manage ai-agent-lab. Podman/container lifecycle is outside
-# the launcher's responsibility.
-exec distrobox enter --root --name "${NAME}" --no-tty --   bash -lc "
+# This launcher intentionally uses the existing rootless Distrobox.
+# It does not create/manage Distrobox or ai-agent-lab containers.
+exec distrobox enter --name "${NAME}" --no-tty --   bash -lc "
     cd '${ROOT}'
     if [ ! -x '${BIN}' ]; then
       cargo build --release >&2
