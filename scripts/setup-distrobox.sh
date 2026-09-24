@@ -4,6 +4,8 @@ set -euo pipefail
 NAME="${MCP_DISTROBOX_NAME:-mcp}"
 IMAGE="${MCP_DISTROBOX_IMAGE:-docker.io/library/debian:bookworm}"
 USER_NAME="${SUDO_USER:-$USER}"
+HOST_UID="$(id -u "${USER_NAME}")"
+HOST_GID="$(id -g "${USER_NAME}")"
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
 command -v distrobox >/dev/null || { echo "error: distrobox is required" >&2; exit 1; }
