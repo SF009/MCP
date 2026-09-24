@@ -75,17 +75,17 @@ impl Server {
 
     fn tools_list(&self) -> Value {
         json!({"tools":[
-            {"name":"terminal_exec","description":"Execute a shell command in the configured Podman container.","inputSchema":{"type":"object","properties":{"command":{"type":"string"},"workdir":{"type":"string"}},"required":["command"]}},
-            {"name":"terminal_read","description":"Read a bounded file from the container.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"max_bytes":{"type":"integer"}},"required":["path"]}},
-            {"name":"fs_read","description":"Read a text file in the container workspace.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"max_bytes":{"type":"integer"}},"required":["path"]}},
-            {"name":"fs_write","description":"Write UTF-8 text to a file in the container workspace.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}},"required":["path","content"]}},
-            {"name":"fs_list","description":"List a directory in the container workspace.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}}}},
+            {"name":"terminal_exec","description":"Execute a shell command directly inside the Ubuntu Distrobox.","inputSchema":{"type":"object","properties":{"command":{"type":"string"},"workdir":{"type":"string"}},"required":["command"]}},
+            {"name":"terminal_read","description":"Read a bounded file from the Ubuntu Distrobox.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"max_bytes":{"type":"integer"}},"required":["path"]}},
+            {"name":"fs_read","description":"Read a text file in the Ubuntu Distrobox workspace.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"max_bytes":{"type":"integer"}},"required":["path"]}},
+            {"name":"fs_write","description":"Write UTF-8 text to a file in the Ubuntu Distrobox workspace.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}},"required":["path","content"]}},
+            {"name":"fs_list","description":"List a directory in the Ubuntu Distrobox workspace.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}}}},
             {"name":"git_status","description":"Return git status for a repository inside the workspace.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}}}},
             {"name":"git_diff","description":"Return git diff for a repository inside the workspace.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"staged":{"type":"boolean"}}}},
             {"name":"git_commit","description":"Create a git commit with a supplied message.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"message":{"type":"string"}},"required":["message"]}},
             {"name":"rag_store","description":"Persist a memory/note in local JSONL RAG storage.","inputSchema":{"type":"object","properties":{"text":{"type":"string"},"metadata":{"type":"object"}},"required":["text"]}},
             {"name":"rag_search","description":"Search local RAG memory using embeddings when configured, otherwise keywords.","inputSchema":{"type":"object","properties":{"query":{"type":"string"},"top_k":{"type":"integer"}},"required":["query"]}},
-            {"name":"container_info","description":"Return bridge, Podman, and sandbox runtime information.","inputSchema":{"type":"object","properties":{}}}
+            {"name":"container_info","description":"Return MCP and Ubuntu Distrobox runtime information.","inputSchema":{"type":"object","properties":{}}}
         ]})
     }
 
