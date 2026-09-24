@@ -21,7 +21,7 @@ rootless Podman inside Distrobox
 ai-agent-lab (existing container, UID 0 inside)
 ```
 
-The MCP process runs as the normal user inside the rootful Distrobox. Nested Podman also runs rootless as that user. The existing `ai-agent-lab` container is the execution boundary and runs as UID 0 inside the container.
+The MCP process runs as the normal user inside the existing rootless Distrobox. Nested Podman also runs rootless as that user. The existing `ai-agent-lab` container is the execution boundary and runs as UID 0 inside the container.
 
 ## Important behavior
 
@@ -55,10 +55,9 @@ For Bionic/MCP stdio, use:
 bash scripts/run-mcp-distrobox.sh
 ```
 
-The launcher performs only the equivalent of entering the existing rootful Distrobox and starting the MCP process inside it. It does not open an interactive shell and does not manage `ai-agent-lab`.
+The launcher enters the existing Distrobox and starts the MCP process inside it. It does not open an interactive shell and does not manage `ai-agent-lab`.
 
 ## Existing sandbox requirements
-
 
 The user-managed container must be named:
 
@@ -66,14 +65,18 @@ The user-managed container must be named:
 ai-agent-lab
 ```
 
-and must already be running.
+and must already exist inside the nested Podman environment used by `ubuntu`.
 
-Check it from inside the Distrobox:
+From the host:
 
 ```bash
 distrobox enter ubuntu
-podman container exists ai-agent-lab
-podman inspect --format '{{.State.Running}}' ai-agent-lab
+```
+
+Then inside Ubuntu:
+
+```bash
+podman ps -a
 podman exec ai-agent-lab id
 ```
 
@@ -108,7 +111,7 @@ shell = "/bin/bash"
 timeout = 300
 workspace = "/workspace"
 max_output = 65536
-auto_start = true
+auto_start = false
 
 [rag]
 enabled = true
