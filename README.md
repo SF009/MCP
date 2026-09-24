@@ -9,69 +9,93 @@ Bionic / AI model (host)
         |
         | MCP stdio / JSON-RPC
         v
-mcp-terminal-bridge
+run-mcp-distrobox.sh
         |
         v
-rootful + unshared Distrobox: mcp
+distrobox enter --root mcp
         |
         v
 rootless Podman inside Distrobox
         |
         v
-ai-agent-lab (UID 0 inside this nested container)
+ai-agent-lab (existing container, UID 0 inside)
 ```
 
-The MCP process runs as the normal Distrobox user. The nested Podman engine also runs rootless. The sandbox `ai-agent-lab` runs as `root` (UID 0) inside its own Podman container.
+The MCP process runs as the normal user inside the rootful Distrobox. Nested Podman also runs rootless as that user. The existing `ai-agent-lab` container is the execution boundary and runs as UID 0 inside the container.
 
-Distrobox officially documents rootful + `--unshare-all` as the pattern for running a separate Podman instance inside Distrobox. It also documents configuring subordinate IDs and `containers.conf` for rootless Podman inside that Distrobox.
+## Important behavior
 
-## Important security note
+**This project does not create, rebuild, replace, or start `ai-agent-lab`.**
 
-This is **not** a host security sandbox. Distrobox is designed for tight host integration, and the Distrobox documentation explicitly warns that rootful Distrobox containers use real root privileges and can modify host system state. The nested `ai-agent-lab` is the intended execution boundary for model-generated commands, but the outer rootful Distrobox must still be treated as privileged infrastructure.
+The sandbox container is intentionally managed by you. The MCP launcher only:
 
-Inside `ai-agent-lab`, the current restrictions are:
+1. enters the existing rootful Distrobox named `mcp`;
+2. builds the MCP release binary if it is missing;
+3. verifies that `ai-agent-lab` already exists;
+4. verifies that `ai-agent-lab` is already running;
+5. starts the MCP stdio server.
 
-- UID 0 / root
-- network disabled
-- all Linux capabilities dropped
-- `no-new-privileges`
-- PID limit 512
-- memory limit 1 GiB
-- workspace mounted at `/workspace`
+If `ai-agent-lab` is missing or stopped, the launcher exits with an error instead of changing the container.
 
-## One-command setup
+## Distrobox
 
-From the repository:
-
-```bash
-bash scripts/setup-distrobox.sh
-```
-
-This performs the rootful/unshared Distrobox creation, nested rootless Podman configuration, Rust release build, sandbox build, and a runtime verification.
-
-## Start MCP
-
-For normal use:
-
-```bash
-bash scripts/run-mcp-distrobox.sh
-```
-
-The launcher automatically repairs a missing MCP binary or missing `ai-agent-lab` container.
-
-For a manual interactive shell:
+The intended command is exactly:
 
 ```bash
 distrobox enter --root mcp
 ```
 
-The `--root` option is intentional: the Distrobox itself is rootful. Distrobox normally uses sudo to access rootful containers, so a host authentication step may be required when the sudo timestamp has expired. For non-interactive MCP/stdio use, authenticate before launching when required. Distrobox documents that rootful entry uses sudo (or a configured alternative such as pkexec/doas).
+Do not replace this with `sudo distrobox enter --root mcp`. Distrobox documents `--root` as the preferred mechanism for rootful Distrobox. citeturn0search1
 
-## Build manually
+## One-time Distrobox setup
+
+If the `mcp` Distrobox has not been configured yet:
 
 ```bash
-cargo build --release
-bash scripts/build-container.sh
+bash scripts/setup-distrobox.sh
+```
+
+This creates/configures only the Distrobox and its nested rootless Podman environment. It does **not** create or build `ai-agent-lab`.
+
+## Start MCP
+
+After your existing `ai-agent-lab` container is running:
+
+```bash
+bash scripts/run-mcp-distrobox.sh
+```
+
+The launcher uses:
+
+```bash
+distrobox enter --root mcp
+```
+
+internally and keeps stdout reserved for MCP JSON-RPC. Logs go to stderr.
+
+## Existing sandbox requirements
+
+The user-managed container must be named:
+
+```text
+ai-agent-lab
+```
+
+and must already be running.
+
+Check it from inside the Distrobox:
+
+```bash
+distrobox enter --root mcp
+podman container exists ai-agent-lab
+podman inspect --format '{{.State.Running}}' ai-agent-lab
+podman exec ai-agent-lab id
+```
+
+The expected UID from the last command is:
+
+```text
+0
 ```
 
 ## MCP tools
@@ -88,7 +112,7 @@ bash scripts/build-container.sh
 - `rag_search`
 - `container_info`
 
-All terminal/container execution is performed through the configured Podman sandbox.
+All terminal/container execution is performed through the existing Podman sandbox.
 
 ## Configuration
 
@@ -109,16 +133,6 @@ max_text_bytes = 32768
 embedding_provider = "none"
 ollama_url = "http://127.0.0.1:11434"
 ollama_model = "nomic-embed-text"
-```
-
-## CI artifact
-
-GitHub Actions runs tests and a release build on pushes to `main`, then packages the Linux x86_64 binary, README, configuration, Containerfile, and scripts.
-
-The artifact is named:
-
-```
-mcp-terminal-bridge-linux-x86_64
 ```
 
 ## License
