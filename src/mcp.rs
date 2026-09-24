@@ -7,7 +7,8 @@ use crate::config::Config;
 use crate::rag::RagStore;
 use crate::terminal::{shell_escape, Terminal};
 
-pub const PROTOCOL_VERSION: &str = "2024-11-05";
+pub const PROTOCOL_VERSION: &str = "2025-11-25";
+pub const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2025-11-25", "2025-06-18", "2024-11-05"];
 pub const SERVER_NAME: &str = "mcp-terminal-bridge";
 pub const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -44,10 +45,22 @@ impl Server {
     pub async fn handle(&mut self, req: Request) -> Option<Response> {
         let id = req.id.clone()?;
         let result = match req.method.as_str() {
-            "initialize" => Ok(json!({
-                "protocolVersion": PROTOCOL_VERSION,
+            "initialize" => {
+                let requested = req.params.get("protocolVersion").and_then(Value::as_str);
+                let selected = requested
+                    .filter(|v| SUPPORTED_PROTOCOL_VERSIONS.contains(v))
+                    .unwrap_or(PROTOCOL_VERSION);
+                tracing::debug!(requested=?requested, selected, "MCP legacy initialize");
+                Ok(json!({
+                    "protocolVersion": selected,
+                    "capabilities": {"tools": {"listChanged": false}},
+                    "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION}
+                }))
+            },
+            "server/discover" => Ok(json!({
+                "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
                 "capabilities": {"tools": {"listChanged": false}},
-                "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION}
+                "supportedVersions": SUPPORTED_PROTOCOL_VERSIONS
             })),
             "ping" => Ok(json!({})),
             "tools/list" => Ok(self.tools_list()),
