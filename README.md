@@ -25,17 +25,9 @@ The MCP process runs as the normal user inside the rootful Distrobox. Nested Pod
 
 ## Important behavior
 
-**This project does not create, rebuild, replace, or start `ai-agent-lab`.**
+The MCP launcher does **not** manage the Podman container lifecycle. It does not create, rebuild, inspect, start, stop, or replace `ai-agent-lab`.
 
-The sandbox container is intentionally managed by you. The MCP launcher only:
-
-1. enters the existing rootful Distrobox named `mcp`;
-2. builds the MCP release binary if it is missing;
-3. verifies that `ai-agent-lab` already exists;
-4. verifies that `ai-agent-lab` is already running;
-5. starts the MCP stdio server.
-
-If `ai-agent-lab` is missing or stopped, the launcher exits with an error instead of changing the container.
+The existing container is configured by you and is accessed by the Rust MCP server through the `podman` command inside the Distrobox.
 
 ## Distrobox
 
@@ -59,21 +51,22 @@ This creates/configures only the Distrobox and its nested rootless Podman enviro
 
 ## Start MCP
 
-After your existing `ai-agent-lab` container is running:
-
-```bash
-bash scripts/run-mcp-distrobox.sh
-```
-
-The launcher uses:
+For manual interactive use:
 
 ```bash
 distrobox enter --root mcp
 ```
 
-internally and keeps stdout reserved for MCP JSON-RPC. Logs go to stderr.
+For Bionic/MCP stdio, use:
+
+```bash
+bash scripts/run-mcp-distrobox.sh
+```
+
+The launcher performs only the equivalent of entering the existing rootful Distrobox and starting the MCP process inside it. It does not open an interactive shell and does not manage `ai-agent-lab`.
 
 ## Existing sandbox requirements
+
 
 The user-managed container must be named:
 
