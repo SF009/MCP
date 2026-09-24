@@ -1,0 +1,14 @@
+container = "ai-agent-lab"
+shell = "/bin/bash"
+timeout = 300
+workspace = "/workspace"
+max_output = 65536
+
+[rag]
+enabled = true
+storage_path = "./data/rag.jsonl"
+top_k = 5
+max_text_bytes = 32768
+embedding_provider = "none"
+ollama_url = "http://127.0.0.1:11434"
+ollama_model = "nomic-embed-text"
