@@ -18,6 +18,13 @@ Rust MCP server over stdio JSON-RPC for a Podman sandbox, filesystem/Git helpers
     cargo test
     cargo build --release
 
+Every push to `main` runs the test/build pipeline and publishes a Linux x86_64 release artifact from the successful release build. The artifact contains the binary, configuration, container definition, scripts, README, and license, plus a SHA-256 checksum.
+
+GitHub Actions artifact:
+`mcp-terminal-bridge-linux-x86_64`
+
+Artifacts are retained by GitHub Actions for 30 days.
+
 ## Sandbox
 
     bash scripts/build-container.sh
