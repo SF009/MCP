@@ -31,8 +31,7 @@ Distrobox is the environment for the MCP process and the nested Podman engine.
 The model remains on the host. The sandbox is the execution environment.
 
 Distrobox documents rootful + `--unshare-all` as the setup for running a separate
-Podman instance inside a Distrobox. The MCP process is then run as the normal
-Distrobox user so the inner sandbox can use rootless Podman.
+Podman instance inside a Distrobox. The MCP process and inner Podman engine run as the normal Distrobox user; the `ai-agent-lab` sandbox itself runs as root.
 
 ## Tools
 
@@ -99,7 +98,7 @@ The MCP configuration defaults to:
     workspace = "/workspace"
     auto_start = true
 
-The bridge automatically starts `ai-agent-lab` if it exists but is stopped.
+The bridge automatically starts `ai-agent-lab` if it exists but is stopped. Commands executed through the bridge run as UID 0 inside `ai-agent-lab`.
 
 ## Running MCP for Bionic
 
