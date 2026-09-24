@@ -1,6 +1,6 @@
 shell = "/bin/bash"
 timeout = 300
-workspace = "/workspace"
+workspace = "."
 max_output = 65536
 
 [rag]
