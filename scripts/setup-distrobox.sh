@@ -1,34 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
 NAME="${MCP_DISTROBOX_NAME:-mcp}"
 IMAGE="${MCP_DISTROBOX_IMAGE:-docker.io/library/debian:bookworm}"
-USER_NAME="${USER:?USER must be set}"
-
-command -v distrobox >/dev/null 2>&1 || {
-  echo "error: distrobox is not installed on the host" >&2
-  exit 1
-}
-
-if distrobox list --no-color 2>/dev/null | grep -Eq "(^|[[:space:]])${NAME}([[:space:]]|$)"; then
-  echo "distrobox '${NAME}' already exists"
-  exit 0
-fi
-
-echo "creating rootful, unshared Distrobox '${NAME}'"
-echo "this follows Distrobox's documented pattern for Podman inside Distrobox."
-
+USER_NAME="${SUDO_USER:-$USER}"
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+command -v distrobox >/dev/null || { echo "distrobox is required" >&2; exit 1; }
+command -v sudo >/dev/null || { echo "sudo is required" >&2; exit 1; }
 sudo -v
-distrobox create --root --yes   --name "${NAME}"   --image "${IMAGE}"   --additional-packages "podman fuse-overlayfs uidmap git curl ca-certificates build-essential sudo"   --unshare-all
-
-echo
-echo "Distrobox created."
-echo "Enter it with:"
-echo "  distrobox enter --root ${NAME}"
-echo
-echo "Then run:"
-echo "  sudo usermod --add-subuids 10000-65536 ${USER_NAME}"
-echo "  sudo usermod --add-subgids 10000-65536 ${USER_NAME}"
-echo
-echo "After that, configure Podman and build the sandbox with:"
-echo "  bash scripts/bootstrap-distrobox.sh"
+if ! distrobox list --no-color 2>/dev/null | grep -Eq "(^|[[:space:]])${NAME}([[:space:]]|$)"; then
+  distrobox create --root --yes --name "${NAME}" --image "${IMAGE}" --additional-packages "podman fuse-overlayfs uidmap git curl ca-certificates build-essential sudo" --unshare-all
+fi
+# Give the normal user subordinate IDs for rootless Podman inside the Distrobox.
+sudo distrobox enter --root --name "${NAME}" --no-tty -- bash -lc "usermod --add-subuids 10000-65536 '${USER_NAME}' || true; usermod --add-subgids 10000-65536 '${USER_NAME}' || true"
+# Build everything as the normal user; the sandbox itself is root.
+sudo distrobox enter --root --name "${NAME}" --no-tty -- bash -lc "runuser -u '${USER_NAME}' -- bash -lc 'cd "${ROOT}" && cargo build --release && bash scripts/build-container.sh'"
+echo "MCP environment ready."
