@@ -6,6 +6,13 @@ if [[ -z "${CONTAINER_ID:-}" ]]; then
   exit 1
 fi
 
+if [[ "$(id -u)" -eq 0 ]]; then
+  echo "error: run this script as the normal Distrobox user, not root." >&2
+  echo "example:"
+  echo "  distrobox enter --root mcp -- bash -lc 'runuser -u YOUR_USER -- bash /path/to/MCP/scripts/bootstrap-distrobox.sh'"
+  exit 1
+fi
+
 command -v podman >/dev/null 2>&1 || {
   echo "error: podman is not installed" >&2
   exit 1
@@ -14,10 +21,8 @@ command -v podman >/dev/null 2>&1 || {
 USER_NAME="${USER:?USER must be set}"
 
 echo "== configuring subordinate IDs =="
-if command -v sudo >/dev/null 2>&1; then
-  sudo usermod --add-subuids 10000-65536 "$USER_NAME" || true
-  sudo usermod --add-subgids 10000-65536 "$USER_NAME" || true
-fi
+sudo usermod --add-subuids 10000-65536 "$USER_NAME" || true
+sudo usermod --add-subgids 10000-65536 "$USER_NAME" || true
 
 mkdir -p "$HOME/.config/containers"
 cat > "$HOME/.config/containers/containers.conf" <<'EOF'
@@ -45,4 +50,4 @@ echo
 echo "== sandbox status =="
 podman ps --filter name=ai-agent-lab --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'
 echo
-echo "Distrobox + nested Podman are ready."
+echo "Distrobox + nested rootless Podman are ready."
