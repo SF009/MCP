@@ -1,8 +1,10 @@
 container = "ai-agent-lab"
+podman = "podman"
 shell = "/bin/bash"
 timeout = 300
 workspace = "/workspace"
 max_output = 65536
+auto_start = true
 
 [rag]
 enabled = true
