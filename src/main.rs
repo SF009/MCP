@@ -24,11 +24,10 @@ async fn main() -> Result<()> {
 
     let cfg_path = std::env::var("MCP_CONFIG").unwrap_or_else(|_| "config.toml".into());
     let cfg = Config::load(&cfg_path)?;
-    tracing::info!(config=%cfg_path, container=%cfg.container, podman=%cfg.podman, "MCP bridge started");
+    tracing::info!(config=%cfg_path, workspace=%cfg.workspace, shell=%cfg.shell, "MCP bridge started");
 
     let runner = Arc::new(PodmanRunner::new(
-        cfg.podman.clone(), cfg.container.clone(), cfg.shell.clone(),
-        cfg.timeout, cfg.workspace.clone(), cfg.auto_start
+        cfg.shell.clone(), cfg.timeout, cfg.workspace.clone()
     ));
     let terminal = Terminal::new(runner.clone(), cfg.max_output);
     let rag = Arc::new(Mutex::new(RagStore::new(&cfg.rag).await?));
