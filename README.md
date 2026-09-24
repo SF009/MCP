@@ -1,95 +1,69 @@
 # MCP Terminal Bridge
 
-A Rust MCP server that exposes terminal, filesystem, Git, container, and optional RAG tools to an external AI model over stdio JSON-RPC.
+A Rust MCP server that lets an external AI model such as Bionic control the existing Ubuntu Distrobox through MCP stdio.
 
 ## Architecture
 
 ```
-Bionic / AI model (host)
-        |
-        | MCP stdio / JSON-RPC
-        v
-run-mcp-distrobox.sh
-        |
-        v
-distrobox enter ubuntu
-        |
-        v
-rootless Podman inside Distrobox
-        |
-        v
-ai-agent-lab (existing container, UID 0 inside)
+Host
+┌──────────────────────────────────────────────────────────┐
+│ Bionic                                                   │
+│   │                                                      │
+│   │ MCP stdio                                             │
+│   ▼                                                      │
+│ run-mcp-distrobox.sh                                     │
+│   │                                                      │
+│   │ distrobox enter ubuntu                               │
+└───┼──────────────────────────────────────────────────────┘
+    ▼
+Ubuntu Distrobox
+┌──────────────────────────────────────────────────────────┐
+│ mcp-terminal-bridge                                      │
+│   │                                                      │
+│   ├── terminal_exec                                      │
+│   ├── terminal_read                                      │
+│   ├── fs_read / fs_write / fs_list                       │
+│   ├── git_status / git_diff / git_commit                 │
+│   └── rag_* / runtime info                               │
+│                                                          │
+│ Commands execute directly in Ubuntu.                     │
+└──────────────────────────────────────────────────────────┘
 ```
 
-The MCP process runs as the normal user inside the existing rootless Distrobox. Nested Podman also runs rootless as that user. The existing `ai-agent-lab` container is the execution boundary and runs as UID 0 inside the container.
+Bionic stays on the host. The MCP process is launched inside the existing Distrobox named `ubuntu`. Tool calls execute directly in that Ubuntu environment.
 
-## Important behavior
+There is no `ai-agent-lab`, no nested Podman sandbox, and no container lifecycle management in the MCP bridge.
 
-The MCP launcher does **not** manage the Podman container lifecycle. It does not create, rebuild, inspect, start, stop, or replace `ai-agent-lab`.
+## Existing Ubuntu Distrobox
 
-The existing container is configured by you and is accessed by the Rust MCP server through the `podman` command inside the Distrobox.
+The default Distrobox name is:
 
-## Distrobox
+```text
+ubuntu
+```
 
-This project uses the existing Distrobox named `ubuntu` by default.
-
-Manual interactive use:
+Manual entry:
 
 ```bash
 distrobox enter ubuntu
 ```
 
-A rootless Distrobox and a rootful Distrobox are different Podman containers/storage contexts. The existing `ubuntu` shown by `distrobox list` is rootless, so `distrobox enter --root ubuntu` does not enter that same container; it asks for/looks for a separate rootful container with the same name.
+The project does not create or replace this Distrobox.
 
 ## Start MCP
 
-For manual interactive use:
-
-```bash
-distrobox enter ubuntu
-```
-
-For Bionic/MCP stdio, use:
+From the host:
 
 ```bash
 bash scripts/run-mcp-distrobox.sh
 ```
 
-The launcher enters the existing Distrobox and starts the MCP process inside it. It does not open an interactive shell and does not manage `ai-agent-lab`.
-
-## Existing sandbox requirements
-
-The user-managed container must be named:
-
-```text
-ai-agent-lab
-```
-
-and must already exist inside the nested Podman environment used by `ubuntu`.
-
-From the host:
-
-```bash
-distrobox enter ubuntu
-```
-
-Then inside Ubuntu:
-
-```bash
-podman ps -a
-podman exec ai-agent-lab id
-```
-
-The expected UID from the last command is:
-
-```text
-0
-```
+For Bionic, register that script as a local stdio MCP server. The launcher uses non-interactive Distrobox entry so stdout remains available for MCP JSON-RPC.
 
 ## MCP tools
 
-- `terminal_exec`
-- `terminal_read`
+- `terminal_exec` — execute a shell command directly in Ubuntu
+- `terminal_read` — read a file directly in Ubuntu
 - `fs_read`
 - `fs_write`
 - `fs_list`
@@ -98,20 +72,15 @@ The expected UID from the last command is:
 - `git_commit`
 - `rag_store`
 - `rag_search`
-- `container_info`
-
-All terminal/container execution is performed through the existing Podman sandbox.
+- `container_info` — report Ubuntu/MCP runtime information
 
 ## Configuration
 
 ```toml
-container = "ai-agent-lab"
-podman = "podman"
 shell = "/bin/bash"
 timeout = 300
 workspace = "/workspace"
 max_output = 65536
-auto_start = false
 
 [rag]
 enabled = true
@@ -122,6 +91,10 @@ embedding_provider = "none"
 ollama_url = "http://127.0.0.1:11434"
 ollama_model = "nomic-embed-text"
 ```
+
+## Security
+
+Bionic can execute commands exposed through `terminal_exec` with the privileges of the user running the MCP process inside Ubuntu. Distrobox is not a host security sandbox.
 
 ## License
 
