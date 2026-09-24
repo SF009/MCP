@@ -148,7 +148,10 @@ impl Server {
     }
     async fn rag_search(&self, a: &Value) -> Result<(String,bool)> {
         let q = required_str(a,"query","rag_search")?;
-        let k = a.get("top_k").and_then(Value::as_u64).unwrap_or(self.cfg.rag.top_k).min(100) as usize;
+        let k: usize = a.get("top_k")
+            .and_then(Value::as_u64)
+            .map(|v| v.min(100) as usize)
+            .unwrap_or(self.cfg.rag.top_k.min(100));
         let store = self.rag.lock().await;
         if !store.enabled() { return Ok(("RAG is disabled in config.".into(),true)); }
         let results = store.search(q,k).await?;
