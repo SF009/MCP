@@ -40,7 +40,7 @@ impl Config {
 }
 fn default_shell() -> String { "/bin/bash".into() }
 fn default_timeout() -> u64 { 300 }
-fn default_workspace() -> String { "/workspace".into() }
+fn default_workspace() -> String { ".".into() }
 fn default_max_output() -> usize { 65536 }
 fn default_true() -> bool { true }
 fn default_rag_path() -> String { "./data/rag.jsonl".into() }
