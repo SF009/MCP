@@ -4,7 +4,7 @@ shell = "/bin/bash"
 timeout = 300
 workspace = "/workspace"
 max_output = 65536
-auto_start = true
+auto_start = false
 
 [rag]
 enabled = true
