@@ -20,7 +20,7 @@ Rust MCP server over stdio JSON-RPC for a Podman sandbox, filesystem/Git helpers
 
 ## Sandbox
 
-    ./scripts/build-container.sh
+    bash scripts/build-container.sh
 
 The supplied container runs as an unprivileged user, has no network,
 drops Linux capabilities, enables no-new-privileges, and limits PIDs/memory.
